@@ -1,0 +1,77 @@
+{% extends 'core/base.html' %}
+
+{% load humanize %}
+
+{% block content %}
+    <div class="container">
+        <div class="columns">
+            <div class="column is-12">
+                <h1 class="title">Search</h1>
+
+                <p>Search term: "{{ query }}"</p>
+
+                <hr>
+
+                <form method="GET" action="{% url 'search' %}">
+                    <div class="field">
+                        <div class="control">
+                            <input type="text" class="input" name="query" value="{{ query }}">
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <div class="control">
+                            <button class="button is-success">Search</button>
+                        </div>
+                    </div>
+                </form>
+
+                <hr>
+
+                <div class="search-results">
+                    {% if not chirpers and not chirps %}
+                        <p>No results, please try a different search term.</p>
+                    {% endif %}
+
+                    {% if chirpers %}
+                        <strong>Chirpers</strong>
+                        {% for chirper in chirpers %}
+                            <p><a href="{% url 'chirperprofile' chirper.username %}">{{ chirper.username }}</a></p>
+                        {% endfor %}
+                    {% endif %}
+
+                    {% if chirps %}
+                        <strong>Chirps</strong>
+
+                        <div class="wrapper-chirps">
+                            {% for chirp in chirps %}
+                                <div class="chirp">
+                                    <article class="media">
+                                        <figure class="media-left">
+                                            <p class="image is-64x64">
+                                                {% if chirp.created_by.chirperprofile.avatar %}
+                                                    <img src="{{ chirp.created_by.chirperprofile.avatar.url }}">
+                                                {% endif %}
+                                            </p>
+                                        </figure>
+        
+                                        <div class="media-content">
+                                            <div class="content">
+                                                <p>
+                                                    <strong><a href="{% url 'chirperprofile' chirp.created_by.username %}">{{ chirp.created_by.username }}</a></strong>
+                                                    <small>{{ chirp.created_at|naturaltime }}</small>
+                                                    <br>
+                                                    {{ chirp.body }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </article>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

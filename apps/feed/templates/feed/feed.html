@@ -1,0 +1,160 @@
+{% extends 'core/base.html' %}
+
+{% load humanize %}
+
+{% block content %}
+    <div class="container" id="feedapp">
+        <div class="columns">
+            <div class="column is-12">
+                <div class="wrapper-form">
+                    <form v-on:submit.prevent="submitChirp()">
+                        <div class="field">
+                            <div class="control">
+                                <textarea class="textarea" v-model="body" placeholder="What are you chirping?"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <div class="control">
+                                <button class="button is-success">Submit</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="wrapper-chirps">
+                    <div class="chirp" v-for="chirp in chirps">
+                        <article class="media">
+                            <figure class="media-left">
+                                <p class="image is-64x64">
+                                    <img :src="chirp.avatar">
+                                </p>
+                            </figure>
+
+                            <div class="media-content">
+                                <div class="content">
+                                    <p>
+                                        <strong>[[ chirp.chirper ]]</strong>
+                                        <small>[[ chirp.created_at ]]</small>
+                                        <br>
+                                        [[ chirp.body ]]
+                                    </p>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                    {% for chirp in chirps %}
+                        <div class="chirp">
+                            <article class="media">
+                                <figure class="media-left">
+                                    <p class="image is-64x64">
+                                        {% if chirp.created_by.chirperprofile.avatar %}
+                                            <img src="{{ chirp.created_by.chirperprofile.avatar.url }}">
+                                        {% endif %}
+                                    </p>
+                                </figure>
+
+                                <div class="media-content">
+                                    <div class="content">
+                                        <p>
+                                            <strong><a href="{% url 'chirperprofile' chirp.created_by.username %}">{{ chirp.created_by.username }}</a></strong>
+                                            <small>{{ chirp.created_at|naturaltime }}</small>
+                                            <br>
+                                            {{ chirp.body }}
+                                            <br>
+                                            <a @click="likeChirp({{ chirp.id }})" v-if="!liked_chirps.includes({{ chirp.id }})">Like</a>
+                                            <span v-if="liked_chirps.includes({{ chirp.id }})">Liked</span>
+                                            <small id="likes-{{ chirp.id }}">{{ chirp.likes.count }} likes</small>
+                                        </p>
+                                    </div>
+                                </div>
+                            </article>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}
+
+{% block script %}
+<script>
+    new Vue({
+        el: '#feedapp',
+        delimiters: ['[[', ']]'],
+        data () {
+            return {
+                chirps: [],
+                body: '',
+                chirper: '{{ request.user.username }}',
+                created_at: 'Now',
+                avatar: '{% if request.user.chirperprofile.avatar %}{{ request.user.chirperprofile.avatar.url }}{% endif %}',
+                liked_chirps: [{% for chirp in chirps %}{% if chirp.liked %}{{ chirp.id }},{% endif %}{% endfor %}]
+            }
+        },
+        methods: {
+            likeChirp(chirp_id) {
+                this.liked_chirps.push(parseInt(chirp_id));
+
+                var chirp = {
+                    'chirp_id': chirp_id
+                };
+
+                fetch('/api/add_like/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify(chirp)
+                })
+                .then((response) => {
+                    console.log(response);
+                })
+                .catch((error) => {
+                    console.log(error);
+                });
+
+                const el = document.getElementById('likes-' + chirp_id);
+                const likes = parseInt(el.innerHTML.split(' ')[0] + 1);
+                el.innerHTML = likes + 'likes';
+            },
+            submitChirp() {
+                console.log('submitChirp');
+
+                if (this.body.length > 0) {
+                    var chirp = {
+                        'body': this.body,
+                        'chirper': this.chirper,
+                        'created_at': this.created_at,
+                        'avatar': this.avatar,
+                    };
+
+                    this.chirps.unshift(chirp);
+
+                    // Send to backend
+
+                    fetch('/api/add_chirp/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify(chirp)
+                    })
+                    .then((response) => {
+                        console.log(response);
+                    })
+                    .catch((error) => {
+                        console.log(error);
+                    });
+                }
+
+                this.body = '';
+            }
+        }
+    })
+</script>
+{% endblock script %}
