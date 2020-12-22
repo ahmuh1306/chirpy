@@ -5,6 +5,18 @@
         <div class="columns">
             <div class="column is-12">
                 <h1 class="title">Welcome to Chirpy</h1>
+
+                <hr>
+
+                {% if request.user.is_authenticated %}
+                    <div class="notification is-info">
+                        <strong>You're logged in. Click here to go to your <a href="{% url 'feed' %}">Feed</a>.</strong>
+                    </div>
+                {% else %}
+                <div class="notification is-info">
+                    <strong>You're not logged in. Click here to <a href="{% url 'login' %}">Log in</a>, or <a href="{% url 'signup' %}">Create an account</a>.</strong>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
